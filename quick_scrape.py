@@ -15,10 +15,17 @@ class QuickScrape():
         res = requests.get('http://mylocalschool.wales.gov.uk/Data/schools.json?111111')
         print('Retrieved school data')
         self.school_data = json.loads(res.text)
+        with open('schools_data.json', 'w') as f:
+            f.write(json.dumps(self.school_data, indent=4))
         print('Found {} schools ({} reported)'.format(len(self.school_data['schools']), len(self.school_data['schools'])))
 
     def get_school_data(self, limit=2, save_to_db=True):
         data = {}
+        try:
+            os.mkdir('./data')
+        except:
+            pass
+
         with open('temp.txt', 'a') as tmp_file:
 
             save_count = 0
@@ -52,4 +59,4 @@ class QuickScrape():
 if __name__ == "__main__":
     qs = QuickScrape()
     qs.prepare()
-    qs.get_school_data(limit=2000)
+    qs.get_school_data(limit=3)

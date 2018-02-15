@@ -1,3 +1,4 @@
+# coding=utf-8
 import os
 
 import requests
@@ -14,7 +15,9 @@ class SchoolGeo:
         self.filepath = filepath
         self.slash = slash
         self.all_points = []
+        self.all_points2 = []
         self.filelist = []
+        self.pioneer_school_codes = {}
 
         for root, dir, files in os.walk(self.filepath):
             for file in files:
@@ -39,7 +42,6 @@ class SchoolGeo:
             print(reader.fieldnames)
             for row in reader:
                 print('\n', row['School name'], '#', row['Ref Number'])
-
                 for school in all_school_data['schools']:
                     if int(school['schoolCode']) == int(row['Ref Number']):
                         print(school['lat'], school['lng'])
@@ -47,6 +49,9 @@ class SchoolGeo:
                         properties = {}
                         for field in reader.fieldnames:
                             properties[field] = row[field]
+
+                        self.pioneer_school_codes[int(row['Ref Number'])] = properties
+
                         self.all_points.append(
                             Feature(
                                 geometry=Point((school['lng'], school['lat'])),
@@ -91,54 +96,106 @@ class SchoolGeo:
                 with open(fullfilepath) as data:
                     json_data = json.loads(data.read())
 
-                print('lat', json_data['lat'])
-                print('lng', json_data['lon'])
+                    if int(json_data['schoolCode']) in self.pioneer_school_codes:
+                        print('This is a pioneer school.')
+                        # properties['pioneer_̣school'] = 'True'
+                        # properties['display_icon'] = 'fa graduation-cap'
 
-                # print json.load(filepath+slash+file)
-                json_lat = float(json_data['lat'])
-                json_lng = float(json_data['lon'])
-                json_schoolname = json_data['schName']
-                json_schoolcode = json_data ['schoolCode']
-                json_type = json_data ['schTypeEnglish']
-                json_medium = json_data ['schLanguageEnglish']
-                indicatorlist= json_data ['lstSubjectsIndicators']
-                for i in indicatorlist:
-                    if 'lstCharts' in i and len(i['lstCharts']):
-                        print('\n\n', i, '\n\n')
-                        lstseries = i['lstCharts'][0]['lstSeries']
-                        for j in lstseries:
-                            if j['subjectCode'] == 'FSM3' and j['nameEnglish'] == 'School':
-                                json_fsmyear = j['years']
-                                json_fsmdata = j['data']
-                                print (json_fsmdata)
-                                json_fsmdata = json_fsmdata[-1]
-                                print (json_fsmdata)
+                        print('lat', json_data['lat'])
+                        print('lng', json_data['lon'])
 
-                                properties['json_fsmyear'] = json_fsmyear
-                                properties['json_fsmdata'] = json_fsmdata
-                                properties['json_fsmdata'] = json_fsmdata
-                                properties['json_schoolname'] = json_schoolname
-                                properties['json_type'] = json_type
-                                properties['json_medium'] = json_medium
+                        # print json.load(filepath+slash+file)
+                        json_lat = float(json_data['lat'])
+                        json_lng = float(json_data['lon'])
+                        json_schoolname = json_data['schName']
+                        json_schoolcode = json_data['schoolCode']
+                        json_type = json_data['schTypeEnglish']
+                        json_medium = json_data['schLanguageEnglish']
+                        indicatorlist = json_data['lstSubjectsIndicators']
+                        for i in indicatorlist:
+                            if 'lstCharts' in i and len(i['lstCharts']):
+                                print('\n\n', i, '\n\n')
+                                lstseries = i['lstCharts'][0]['lstSeries']
+                                for j in lstseries:
+                                    if j['subjectCode'] == 'FSM3' and j['nameEnglish'] == 'School':
+                                        json_fsmyear = j['years']
+                                        json_fsmdata = j['data']
+                                        # print (json_fsmdata)
+                                        json_fsmdata = json_fsmdata[-1]
+                                        # print (json_fsmdata)
 
-                self.all_points.append(
-                    Feature(
-                        geometry=Point((json_lng, json_lat)),
-                        properties=properties
-                    )
-                )
+                                        properties['json_fsmyear'] = json_fsmyear
+                                        properties['json_fsmdata'] = json_fsmdata
+                                        properties['json_fsmdata'] = json_fsmdata
+                                        properties['json_schoolname'] = json_schoolname
+                                        properties['json_type'] = json_type
+                                        properties['json_medium'] = json_medium
+
+                        if json_data['schTypeEnglish'] == 'Nursery, Infants & Juniors':
+                            properties['point_icon'] = 'fa-users'
+                        elif json_data['schTypeEnglish'] == 'Infants & Juniors':
+                            properties['point_icon'] = 'fa-child'
+                        elif json_data['schTypeEnglish'] == 'Secondary (ages 11-16)':
+                            properties['point_icon'] = 'fa-bank'
+                        elif json_data['schTypeEnglish'] == 'Juniors':
+                            properties['point_icon'] = 'fa-user'
+                        elif json_data['schTypeEnglish'] == 'Nursery & Infants':
+                            properties['point_icon'] = 'fa-graduation-cap'
+                        elif json_data['schTypeEnglish'] == 'Middle (ages 3-16)':
+                            properties['point_icon'] = 'fa-mortar-board'
+                        elif json_data['schTypeEnglish'] == 'Middle (ages 3-19)':
+                            properties['point_icon'] = 'fa-institution'
+                        elif json_data['schTypeEnglish'] == 'Secondary (ages 11-19)':
+                            properties['point_icon'] = 'fa-male'
+                        elif json_data['schTypeEnglish'] == 'Special (with post-16 provision)':
+                            properties['point_icon'] = 'fa-building'
+                        elif json_data['schTypeEnglish'] == 'Special (without post-16 provision)':
+                            properties['point_icon'] = 'fa-building-o'
+
+                        if json_data['schLanguageEnglish'] == 'Welsh medium':
+                            properties['point_icon_colour'] = 'black'
+                            properties['point_icon_bgcolour'] = 'green'
+                        elif json_data['schLanguageEnglish'] == 'English medium':
+                            properties['point_icon_colour'] = 'white'
+                            properties['point_icon_bgcolour'] = 'red'
+                        elif json_data['schLanguageEnglish'] == 'Bilingual (Type A)':
+                            properties['point_icon_colour'] = 'purple'
+                            properties['point_icon_bgcolour'] = 'yellow'
+                        elif json_data['schLanguageEnglish'] == 'Bilingual (Type B)':
+                            properties['point_icon_colour'] = 'orange'
+                            properties['point_icon_bgcolour'] = 'darkblue'
+                        elif json_data['schLanguageEnglish'] == 'English with significant Welsh':
+                            properties['point_icon_colour'] = 'black'
+                            properties['point_icon_bgcolour'] = 'red'
+
+                        properties.update(self.pioneer_school_codes[int(json_data['schoolCode'])])
+
+                        self.all_points2.append(
+                            Feature(
+                                geometry=Point((json_lng, json_lat)),
+                                properties=properties
+                            )
+                        )
+
+                    else:
+                        print('Ignore this school')
+                        properties['pioneer_school'] = 'False'
+                        properties['display_icon'] = 'fa map-pin'
+
+
             except Exception as ex1:
                 print(ex1)
 
-        print(self.all_points)
+        print(self.all_points2)
 
-        fc = FeatureCollection(self.all_points)
+        fc = FeatureCollection(self.all_points2)
         print(dumps(fc))
 
-        with open('schools_geo.json', 'w') as geo1:
+        with open('schools_geo1.json', 'w') as geo1:
             geo1.write(dumps(fc, indent=4))
 
 
 if __name__ == "__main__":
     school_geo = SchoolGeo()
+    school_geo.geotag_school_to_geojson()
     school_geo.mylocalschool()
